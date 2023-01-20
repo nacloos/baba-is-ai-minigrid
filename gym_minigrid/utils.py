@@ -1,6 +1,3 @@
-"""
-Modified version of gym.utils.play.play
-"""
 from itertools import product
 
 import cv2

@@ -5,8 +5,8 @@ from typing import Tuple
 
 import numpy as np
 
-from .core.flexible_world_object import FBall, FWall, RuleProperty, RuleIs, RuleObject, Baba
-from .core.utils import grid_random_position
+from gym_minigrid.flexible_world_object import FBall, FWall, RuleProperty, RuleIs, RuleObject, Baba
+from gym_minigrid.utils import grid_random_position
 from gym_minigrid.minigrid import MiniGridEnv, MissionSpace, Grid
 from ...babaisyou import BabaIsYouGrid, BabaIsYouEnv
 
@@ -24,10 +24,10 @@ class BaseGridEnv(BabaIsYouEnv):
             **kwargs
         )
 
-    def put_rule(self, obj: str, property: str, positions: list[RuleObjPos, RuleIsPos, RulePropPos], can_push=True):
-        self.put_obj(RuleObject(obj, can_push=can_push), *positions[0])
-        self.put_obj(RuleIs(can_push=can_push), *positions[1])
-        self.put_obj(RuleProperty(property, can_push=can_push), *positions[2])
+    def put_rule(self, obj: str, property: str, positions: list[RuleObjPos, RuleIsPos, RulePropPos], is_push=True):
+        self.put_obj(RuleObject(obj, is_push=is_push), *positions[0])
+        self.put_obj(RuleIs(is_push=is_push), *positions[1])
+        self.put_obj(RuleProperty(property, is_push=is_push), *positions[2])
 
 
 def random_rule_pos(size, margin):
@@ -96,7 +96,7 @@ class GoToObjEnv(BaseGridEnv):
 
         if self.show_rules:
             self.put_rule(obj='baba', property='is_agent', positions=[(1, 1), (2, 1), (3, 1)])
-            self.put_rule(obj='fball', property='is_goal', positions=self.rule_pos, can_push=self.push_rule_block)
+            self.put_rule(obj='fball', property='is_goal', positions=self.rule_pos, is_push=self.push_rule_block)
 
         if self.rdm_ball_pos:
             for i in range(self.n_balls):

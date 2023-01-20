@@ -21,15 +21,21 @@ def extract_rule(block_list):
         if e is None:
             return None
 
-    is_valid = \
-        block_list[0].type == 'rule_object' and \
-        block_list[1].type == 'rule_is' and \
-        block_list[2].type == 'rule_property'
+    def _is_valid_rule(blocks, template):
+        is_valid = True
+        for i, block in enumerate(blocks):
+            is_valid = is_valid and block.type == template[i]
+        return is_valid
 
-    if is_valid:
+    if _is_valid_rule(block_list, ["rule_object", "rule_is", "rule_property"]):
         return {
             'object': block_list[0].object,
             'property': block_list[2].property
+        }
+    elif _is_valid_rule(block_list, ["rule_object", "rule_is", "rule_object"]):
+        return {
+            'object1': block_list[0].object,
+            'object2': block_list[2].object
         }
     else:
         return None
@@ -44,12 +50,17 @@ def add_rule(block_list, ruleset):
     """
     rule = extract_rule(block_list)
     if rule is not None:
-        ruleset[rule['property']][rule['object']] = True
+        if 'property' in rule and 'object' in rule:
+            ruleset[rule['property']][rule['object']] = True
+        elif 'object1' in rule and 'object2' in rule:
+            replace_list = ruleset.get('replace', [])
+            replace_list.append((rule['object1'], rule['object2']))
+            ruleset['replace'] = replace_list
 
 
 def inside_grid(grid, pos):
     """
-    Return true if pos is outside the boundaries of the grid
+    Return true if pos is inside the boundaries of the grid
     """
     i, j = pos
     inside_grid = (i >= 0 and i < grid.width) and (j >= 0 and j < grid.height)
@@ -63,17 +74,16 @@ def extract_ruleset(grid, default_ruleset=None):
     ruleset = defaultdict(dict)
     ruleset.update(default_ruleset) if default_ruleset is not None else None
 
-    # loop through all 'is' blocks
-    # for k, e in enumerate(grid.grid):
     if not isinstance(grid, Iterable):
         grid = grid.grid
 
+    # loop through all 'is' blocks
     for k, e in enumerate(grid):
         if e is not None and e.type == 'rule_is':
             i, j = k % grid.width, k // grid.width
             assert k == j * grid.width + i
 
-            # check for horizontal
+            # check for horizontal rules
             if inside_grid(grid, (i-1, j)) and inside_grid(grid, (i+1, j)):
                 left_cell = grid.get(i-1, j)
                 right_cell = grid.get(i+1, j)

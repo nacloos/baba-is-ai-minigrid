@@ -2,15 +2,15 @@ import math
 
 import numpy as np
 
-from gym_minigrid.envs.babaisyou.core.utils import add_img_text
+from gym_minigrid.utils import add_img_text
 from gym_minigrid.minigrid import WorldObj, COLORS, OBJECT_TO_IDX, COLOR_TO_IDX
 from gym_minigrid.rendering import fill_coords, point_in_circle, point_in_rect, point_in_triangle, rotate_fn
 
 
 properties = [
     # 'can_overlap',
-    'is_block',
-    'can_push',
+    'is_stop',
+    'is_push',
     'is_goal',
     'is_defeat',
     'is_agent',
@@ -33,8 +33,8 @@ name_mapping = {
     'fball': 'ball',
     'fdoor': 'door',
     'fkey': 'key',
-    'can_push': 'push',
-    'is_block': 'stop',
+    'is_push': 'push',
+    'is_stop': 'stop',
     'is_goal': 'win',
     'is_defeat': 'lose',
     'is': 'is',
@@ -90,9 +90,9 @@ class RuleBlock(WorldObj):
     """
     By default, rule blocks can be pushed by the agent.
     """
-    def __init__(self, name, type, color, can_push=True):
+    def __init__(self, name, type, color, is_push=True):
         super().__init__(type, color)
-        self._can_push = can_push
+        self._is_push = is_push
         self.name = name = name_mapping.get(name, name)
         self.margin = 10
         img = np.zeros((96-2*self.margin, 96-2*self.margin, 3), np.uint8)
@@ -102,8 +102,8 @@ class RuleBlock(WorldObj):
     def can_overlap(self):
         return False
 
-    def can_push(self):
-        return self._can_push
+    def is_push(self):
+        return self._is_push
 
     def render(self, img):
         fill_coords(img, point_in_rect(0.06, 0.94, 0.06, 0.94), [235, 235, 235])
@@ -117,22 +117,40 @@ class RuleBlock(WorldObj):
 
 
 class RuleObject(RuleBlock):
-    def __init__(self, obj, can_push=True):
-        super().__init__(obj, 'rule_object', 'purple', can_push=can_push)
+    def __init__(self, obj, is_push=True):
+        super().__init__(obj, 'rule_object', 'purple', is_push=is_push)
         assert obj in objects, "{} not in {}".format(obj, objects)
         self.object = obj
 
 
 class RuleProperty(RuleBlock):
-    def __init__(self, property, can_push=True):
-        super().__init__(property, 'rule_property', 'purple', can_push=can_push)
+    def __init__(self, property, is_push=True):
+        super().__init__(property, 'rule_property', 'purple', is_push=is_push)
         assert property in properties, "{} not in {}".format(property, properties)
         self.property = property
 
 
 class RuleIs(RuleBlock):
-    def __init__(self, can_push=True):
-        super().__init__('is', 'rule_is', 'purple', can_push=can_push)
+    def __init__(self, is_push=True):
+        super().__init__('is', 'rule_is', 'purple', is_push=is_push)
+
+
+class Ruleset:
+    def __init__(self, ruleset_dict):
+        self.ruleset_dict = ruleset_dict
+
+    def set(self, ruleset_dict):
+        self.ruleset_dict = ruleset_dict
+
+    def __getitem__(self, item):
+        return self.ruleset_dict[item]
+
+    def __setitem__(self, key, value):
+        self.ruleset_dict[key] = value
+
+    def __getattr__(self, item):
+        return getattr(self.ruleset_dict, item)
+
 
 
 def make_prop_fn(prop, typ):
@@ -143,9 +161,9 @@ def make_prop_fn(prop, typ):
         ruleset = self.get_ruleset()
 
         # TODO: is_pull, is_agent implies is_stop
-        if prop == 'is_block':
+        if prop == 'is_stop':
             if ruleset['is_pull'].get(typ, False) or ruleset['is_agent'].get(typ, False):
-                ruleset['is_block'][typ] = True
+                ruleset['is_stop'][typ] = True
 
         return ruleset[prop].get(typ, False)
     return get_prop
@@ -162,15 +180,21 @@ class FlexibleWorldObj(WorldObj):
             setattr(self.__class__, prop, make_prop_fn(prop, self.type))
 
     # TODO: might be better to use a Ruleset object
-    def set_ruleset_getter(self, get_ruleset):
-        self._get_ruleset = get_ruleset
+    # def set_ruleset_getter(self, get_ruleset):
+    #     self._get_ruleset = get_ruleset
+    #
+    # def get_ruleset(self):
+    #     return self._get_ruleset()
+
+    def set_ruleset(self, ruleset):
+        self._ruleset = ruleset
 
     def get_ruleset(self):
-        return self._get_ruleset()
+        return self._ruleset
 
     # compatibility with WorldObj
     def can_overlap(self):
-        return not self.is_block()
+        return not self.is_stop()
 
 
 class FWall(FlexibleWorldObj):

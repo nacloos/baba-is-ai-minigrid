@@ -1,8 +1,10 @@
 import numpy as np
 
+from gym_minigrid import Wall
 from gym_minigrid.babaisyou import BabaIsYouEnv, BabaIsYouGrid
-from gym_minigrid.envs.babaisyou.core.flexible_world_object import RuleObject, RuleIs, RuleProperty, Baba, make_obj, \
-    FDoor
+from gym_minigrid.flexible_world_object import RuleObject, RuleIs, RuleProperty, Baba, make_obj, \
+    FDoor, FWall
+from gym_minigrid.babaisyou import put_rule
 
 
 class MoveObjEnv(BabaIsYouEnv):
@@ -29,7 +31,7 @@ class MoveObjEnv(BabaIsYouEnv):
 
         self.put_obj(RuleObject(sampled_obj_name), 1, 2)
         self.put_obj(RuleIs(), 2, 2)
-        self.put_obj(RuleProperty('can_push'), 3, 2)
+        self.put_obj(RuleProperty('is_push'), 3, 2)
 
         if self.goal_pos == 'random':
             self.current_goal_pos = self.place_obj(FDoor())
@@ -44,7 +46,7 @@ class MoveObjEnv(BabaIsYouEnv):
 
     def reward(self):
         if self.grid.get(*self.current_goal_pos) == self.sampled_obj:
-            return self._reward(), True
+            return self.get_reward(), True
         else:
             return 0, False
 
@@ -61,7 +63,7 @@ class OpenShutObjEnv(BabaIsYouEnv):
 
         default_ruleset = {
             "is_agent": {"baba": True},
-            # "can_push": {obj: True for obj in self.object_names}
+            # "is_push": {obj: True for obj in self.object_names}
         }
 
         self.size = size
@@ -85,12 +87,12 @@ class OpenShutObjEnv(BabaIsYouEnv):
         # open and push rules
         self.put_obj(RuleObject(open_obj_name), 1, 1)
         self.put_obj(RuleIs(), 2, 1)
-        self.put_obj(RuleProperty('can_push'), 3, 1)
+        self.put_obj(RuleProperty('is_push'), 3, 1)
         # self.put_obj(RuleProperty('is_open'), 3, 1)
 
         # self.put_obj(RuleObject(open_obj_name), 4, 1)
         # self.put_obj(RuleIs(), 5, 1)
-        # self.put_obj(RuleProperty('can_push'), 6, 1)
+        # self.put_obj(RuleProperty('is_push'), 6, 1)
 
         # shut rule
         self.put_obj(RuleObject(shut_obj_name), 1, 2)
@@ -108,6 +110,169 @@ class OpenShutObjEnv(BabaIsYouEnv):
 
     def reward(self):
         if self.grid.get(*self.shut_obj_pos) == self.open_obj:
-            return self._reward(), True
+            return self.get_reward(), True
         else:
             return 0, False
+
+
+class OpenAndGoToWinEnv(BabaIsYouEnv):
+    tasks = ["goto_win", "open_shut", "make_rule"]
+
+    def __init__(self, separating_walls=True, task="goto_win", show_shut_obj=True, goal_rule=True, height=8, width=11, **kwargs):
+        self.separating_walls = separating_walls
+        default_ruleset = {
+            "is_agent": {"baba": True},
+            "is_open": {"fkey": True},
+            "is_stop": {"fdoor": True}
+        }
+
+        assert task in self.tasks, task
+        self.task = task
+
+        self.goal_rule = goal_rule  # don't activate the goal rule if false
+        self.show_shut_obj = show_shut_obj
+        super().__init__(width=width, height=height, max_steps=4*width*height,
+                         default_ruleset=default_ruleset, **kwargs)
+
+    def _gen_grid(self, width, height):
+        self.grid = BabaIsYouGrid(width, height)
+        self.grid.wall_rect(0, 0, width, height)
+
+        if self.separating_walls:
+            self.grid.vert_wall(width//2, 1, length=height-2, obj_type=FWall)
+
+        open_obj_name = "fkey"
+        shut_obj_name = "fdoor"
+        win_obj_name = "fball"
+
+        if self.goal_rule:
+            put_rule(self, open_obj_name, 'is_push', [(1, 1), (2, 1), (3, 1)])
+        else:
+            put_rule(self, open_obj_name, 'is_push', [(1, 1), (2, 1), (3, 2)])
+
+        put_rule(self, win_obj_name, 'is_goal', [(width-4, 1), (width-3, 1), (width-2, 1)])
+        put_rule(self, shut_obj_name, 'is_shut', [(1, height-2), (2, height-2), (3, height-2)])
+        put_rule(self, "fwall", 'is_stop', [(width-4, height-2), (width-3, height-2), (width-2, height-2)])
+
+        self.place_obj(make_obj(open_obj_name), top=(3, 3), size=[width//2-4, height-6])
+
+        shut_obj_pos = (width//2, height//2)
+        self._shut_obj_pos = shut_obj_pos
+        self.grid.set(width//2, height//2, None)  # first remove the wall
+        if self.show_shut_obj:
+            self.put_obj(make_obj(shut_obj_name), *shut_obj_pos)
+
+        self.place_obj(make_obj(win_obj_name))
+
+        # for name, obj in self.all_objects.items():
+        #     pos = self.place_obj(obj, top=(2, 2), size=[self.size-4, self.size-4])
+        #     if name == open_obj_name:
+        #         self.open_obj_pos = pos
+        #     elif name == shut_obj_name:
+        #         self.shut_obj_pos = pos
+
+        self.place_obj(Baba(), size=[width//2, height])
+        self.place_agent()
+
+    def reward(self):
+        if self.task == "open_shut":
+            assert self._shut_obj_pos is not None
+            # check if the shut obj is destroyed
+            if self.grid.get(*self._shut_obj_pos) is None:
+                return self.get_reward(), True
+            else:
+                return 0, False
+
+        elif self.task == "goto_win":
+            return super().reward()
+
+        elif self.task == "make_rule":
+            ruleset = self.get_ruleset()
+            if ruleset['is_push'].get('fkey', False):
+                return self.get_reward(), True
+            else:
+                return 0, False
+
+        else:
+            raise ValueError(self.task)
+
+
+class FourRoomEnv(BabaIsYouEnv):
+    def __init__(self, open_shut_task=False, show_shut_obj=True, height=15, width=15, randomize=False, **kwargs):
+        # default_ruleset = {
+            # "is_agent": {"baba": True},
+            # "is_open": {"fkey": True},
+            # "is_stop": {"fdoor": True}  # TODO: bug with wall is stop
+        # }
+        default_ruleset = {}
+        self.open_shut_task = open_shut_task
+        self.show_shut_obj = show_shut_obj
+        self.randomize = randomize
+        super().__init__(width=width, height=height, max_steps=4*width*height,
+                         default_ruleset=default_ruleset, **kwargs)
+
+    def _gen_grid(self, width, height):
+        self.grid = BabaIsYouGrid(width, height)
+        self.grid.wall_rect(0, 0, width, height)
+
+        self.grid.vert_wall(width//2, 1, length=height-2, obj_type=Wall)
+        self.grid.horz_wall(1, height//2, length=width-2, obj_type=Wall)
+
+        objects = ["fkey", "fdoor", "fball", "fwall"]
+        rule_objects = ["baba", "fkey", "fdoor", "fkey"]
+
+        def _permute(arr):
+            indices = np.random.choice(np.arange(len(arr)), size=len(arr), replace=False)
+            arr = np.array(arr)[indices]
+            return arr
+
+        if self.randomize:
+            objects = _permute(objects)
+            rule_objects = _permute(objects)
+
+        put_rule(self, objects[0], 'is_push', [(2+i, 2) for i in range(3)])
+        put_rule(self, "baba", 'is_agent', [(2+i, 4) for i in range(3)])
+
+        put_rule(self, objects[1], 'is_shut', [(2+i, height-5) for i in range(3)])
+        put_rule(self, rule_objects[1], 'is_open', [(2+i, height-3) for i in range(3)])
+
+        put_rule(self, objects[2], 'is_goal', [(width-5+i, 2) for i in range(3)])
+        put_rule(self, rule_objects[2], 'is_stop', [(width-5+i, 4) for i in range(3)])
+
+        put_rule(self, objects[3], 'is_stop', [(width-5+i, height-3) for i in range(3)])
+        put_rule(self, rule_objects[3], "is_defeat", [(width-5+i, height-5) for i in range(3)])
+
+        def _put_obj(name, pos):
+            self.grid.set(*pos, None)  # first remove the wall
+            self.put_obj(make_obj(name), *pos)
+
+        # self._shut_obj_pos = shut_obj_pos = (width//2, height//4)
+        object_pos = [(width//2, height//4), (width//4, height//2), (3*width//4, height//2), (width//2, 3*height//4)]
+        if self.randomize:
+            object_pos = _permute(object_pos)
+        # _put_obj(objects[0], shut_obj_pos)
+        # _put_obj(objects[1], (width//4, height//2))
+        # _put_obj(objects[2], (3*width//4, height//2))
+        # _put_obj(objects[3], (width//2, 3*height//4))
+
+        for i in range(len(objects)):
+            _put_obj(objects[i], object_pos[i])
+
+        if self.randomize:
+            self.place_obj(Baba(), size=[width, height])
+        else:
+            self.put_obj(Baba(), 4, 3)
+        self.place_agent()
+
+
+    def reward(self):
+        if self.open_shut_task:
+            assert self._shut_obj_pos is not None
+            # check if the shut obj is destroyed
+            if self.grid.get(*self._shut_obj_pos) is None:
+                return self.get_reward(), True
+            else:
+                return 0, False
+
+        else:
+            return super().reward()

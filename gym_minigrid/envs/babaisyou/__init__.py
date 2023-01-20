@@ -4,7 +4,9 @@ from gym_minigrid.envs.babaisyou.goto import (
 )
 from gym_minigrid.envs.babaisyou.move import (
     MoveObjEnv,
-    OpenShutObjEnv
+    OpenShutObjEnv,
+    OpenAndGoToWinEnv,
+    FourRoomEnv
 )
 from gym_minigrid.envs.babaisyou.changerule import (
     ChangeRuleEnv,

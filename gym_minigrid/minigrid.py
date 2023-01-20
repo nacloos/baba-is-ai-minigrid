@@ -305,7 +305,7 @@ class WorldObj:
         """Can the agent overlap with this?"""
         return False
 
-    def can_push(self):
+    def is_push(self):
         """Can the agent push this?"""
         return False
 
@@ -1354,7 +1354,7 @@ class MiniGridEnv(gym.Env):
         fwd_pos = pos + self.dir_vec
         # if fwd_cell can be pushed, try to move it
         fwd_cell = self.grid.get(*fwd_pos)
-        if fwd_cell is not None and fwd_cell.can_push():
+        if fwd_cell is not None and fwd_cell.is_push():
             new_fwd_pos = self.move_fwd(fwd_pos)
             self.change_obj_pos(fwd_pos, new_fwd_pos)
 

@@ -10,8 +10,6 @@ from gym_minigrid.envs.babaisyou import TestRuleEnv
 from gym.utils.play import display_arr
 from pygame import VIDEORESIZE
 
-from tests.test_babaisyou import TestWinLoseEnv, TestPushEnv, TestPullEnv
-
 
 def play_minigrid(env):
     assert isinstance(env.unwrapped, MiniGridEnv)

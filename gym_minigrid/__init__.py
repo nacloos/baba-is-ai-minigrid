@@ -31,6 +31,12 @@ def register_minigrid_envs():
     register(id="BabaIsYou-OpenShutObj-v0",
         entry_point="gym_minigrid.envs.babaisyou:OpenShutObjEnv"
     )
+    register(id="BabaIsYou-OpenAndGoToWin-v0",
+        entry_point="gym_minigrid.envs.babaisyou:OpenAndGoToWinEnv"
+    )
+    register(id="BabaIsYou-FourRoomEnv-v0",
+        entry_point="gym_minigrid.envs.babaisyou:FourRoomEnv"
+    )
     register(
         id="BabaIsYou-MakeRule-v0",
         entry_point="gym_minigrid.envs.babaisyou:MakeRuleEnv"

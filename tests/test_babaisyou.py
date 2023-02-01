@@ -1,6 +1,8 @@
 from gym_minigrid.babaisyou import BabaIsYouGrid
-from gym_minigrid.envs.babaisyou.core.flexible_world_object import FBall, Baba, FWall
+from gym_minigrid.envs.babaisyou.core.flexible_world_object import FBall, Baba, FWall, FDoor, FKey
 from gym_minigrid.envs.babaisyou.goto import BaseGridEnv
+from gym_minigrid.envs.babaisyou.wrappers import OpenShutReward
+from gym_minigrid.play_game import play_babaisyou
 
 
 class TestWinLoseEnv(BaseGridEnv):
@@ -364,3 +366,40 @@ def test_pull_case8():
 # test_pull_case7()
 # test_pull_case8()
 
+
+class TestOpenShutEnv(BaseGridEnv):
+    def __init__(self, size=8, **kwargs):
+        self.size = size
+        super().__init__(size=size, **kwargs)
+
+    def _gen_grid(self, width, height):
+        self.grid = BabaIsYouGrid(width, height)
+        self.grid.wall_rect(0, 0, width, height)
+
+        self.put_rule(obj='baba', property='is_agent', positions=[(1, 1), (2, 1), (3, 1)])
+        self.put_rule(obj='fdoor', property='is_shut', positions=[(1, 2), (2, 2), (3, 2)])
+        self.put_rule(obj='fdoor', property='is_stop', positions=[(1, 3), (2, 3), (3, 3)])
+        self.put_rule(obj='fkey', property='is_open', positions=[(4, 1), (5, 1), (6, 1)])
+        self.put_rule(obj='fkey', property='is_push', positions=[(4, 2), (5, 2), (6, 2)])
+
+        self.put_obj(Baba(), 3, 4)
+        self.put_obj(FKey(), 4, 4)
+        self.put_obj(FDoor(), 5, 4)
+        self.place_agent()
+
+
+def test_open_shut_case1():
+    # TODO: test stacked open obj
+    env = TestOpenShutEnv()
+    env.step(action=env.actions.right)
+    assert isinstance(env.grid.get(4, 4), Baba)
+    assert env.grid.get(5, 4) is None
+
+
+def test_open_shut_reward():
+    env = TestOpenShutEnv()
+    env = OpenShutReward(env)
+
+    env.reset()
+    obs, reward, done, info = env.step(action=env.actions.right)
+    assert reward > 0

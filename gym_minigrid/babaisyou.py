@@ -10,6 +10,7 @@ from gym import spaces
 from gym.utils import seeding
 
 # Size in pixels of a tile in the full-scale human view
+from gym_minigrid.flexible_world_object import make_obj, RuleObject, RuleIs, RuleProperty, Ruleset
 from gym_minigrid.minigrid import Grid, TILE_PIXELS, DIR_TO_VEC, WorldObj, Wall, OBJECT_TO_IDX
 from gym_minigrid.rendering import (
     downsample,
@@ -65,10 +66,23 @@ class BabaIsYouGrid:
 
         return deepcopy(self)
 
+    def _get_idx(self, i, j):
+        assert 0 <= i < self.width
+        assert 0 <= j < self.height
+        return j * self.width + i
+
+    def pop(self, i, j, z=None):
+        """
+        Remove the zth element in the list of objects at position i, j
+        """
+        idx = self._get_idx(i, j)
+        if z is None:
+            self.grid[idx].pop()
+        else:
+            self.grid[idx].pop(z)
+
     def set(self, i, j, v):
-        assert i >= 0 and i < self.width
-        assert j >= 0 and j < self.height
-        idx = j * self.width + i
+        idx = self._get_idx(i, j)
 
         if v is None:
             if self.grid[idx] == [None]:
@@ -85,14 +99,16 @@ class BabaIsYouGrid:
         Args:
             z: return the object at the top if -1
         """
-        assert 0 <= i < self.width
-        assert 0 <= j < self.height
+        idx = self._get_idx(i, j)
 
-        min_len = z+1 if z >= 0 else -z
-        if len(self.grid[j * self.width + i]) <= min_len:
+        if z == 'all':
+            return self.grid[idx]
+
+        min_len = z + 1 if z >= 0 else -z
+        if len(self.grid[idx]) <= min_len:
             return None
 
-        return self.grid[j * self.width + i][z]
+        return self.grid[idx][z]
 
     def get_under(self, i, j):
         # return the second object in the cell
@@ -103,6 +119,18 @@ class BabaIsYouGrid:
             return None
         else:
             return self.grid[j * self.width + i][-2]
+
+    def replace(self, obj_type1: str, obj_type2: str):
+        for j in range(0, self.height):
+            for i in range(0, self.width):
+                cell = self.get(i, j)
+                if cell is None:
+                    continue
+
+                if cell.type == obj_type1:
+                    new_obj = make_obj(obj_type2)
+                    new_obj.set_ruleset(self._ruleset)
+                    self.set(i, j, new_obj)
 
     def __iter__(self):
         for elem in self.grid.__iter__():
@@ -128,7 +156,7 @@ class BabaIsYouGrid:
 
     @classmethod
     def render_tile(
-        cls, obj, agent_dir=None, highlight=False, tile_size=TILE_PIXELS, subdivs=3
+            cls, obj, agent_dir=None, highlight=False, tile_size=TILE_PIXELS, subdivs=3
     ):
         """
         Render a tile and cache the result
@@ -221,13 +249,13 @@ class BabaIsYouGrid:
         if vis_mask is None:
             vis_mask = np.ones((self.width, self.height), dtype=bool)
 
-        array = np.zeros((self.width, self.height, 3*self.encoding_level), dtype="uint8")
+        array = np.zeros((self.width, self.height, 3 * self.encoding_level), dtype="uint8")
 
         def _encode_cell_objects(i, j):
-            v_arr = np.zeros(3*self.encoding_level)
-            for idx, z in enumerate(range(1, self.encoding_level+1)):
+            v_arr = np.zeros(3 * self.encoding_level)
+            for idx, z in enumerate(range(1, self.encoding_level + 1)):
                 v = self.get(i, j, -z)
-                v_arr[idx*3:(idx+1)*3] = self.encode_cell(v)
+                v_arr[idx * 3:(idx + 1) * 3] = self.encode_cell(v)
             return v_arr
 
         for i in range(self.width):
@@ -321,12 +349,12 @@ class BabaIsYouEnv(gym.Env):
         left = 4
 
     def __init__(
-        self,
-        grid_size: int = None,
-        width: int = None,
-        height: int = None,
-        max_steps: int = 100,
-        **kwargs,
+            self,
+            grid_size: int = None,
+            width: int = None,
+            height: int = None,
+            max_steps: int = 100,
+            **kwargs,
     ):
         # Can't set both grid_size and width/height
         if grid_size:
@@ -346,7 +374,7 @@ class BabaIsYouEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0,
             high=255,
-            shape=(width, height, 3*self.encoding_level),
+            shape=(width, height, 3 * self.encoding_level),
             dtype="uint8",
         )
 
@@ -394,10 +422,15 @@ class BabaIsYouEnv(gym.Env):
         # for e in self.grid:
         #     if hasattr(e, "set_ruleset_getter"):
         #         e.set_ruleset_getter(self.get_ruleset)
+
+        self._ruleset = Ruleset(self._ruleset)
+        self.grid._ruleset = self._ruleset
         for e_list in self.grid.grid:
             for e in e_list:
-                if hasattr(e, "set_ruleset_getter"):
-                    e.set_ruleset_getter(self.get_ruleset)
+                # if hasattr(e, "set_ruleset_getter"):
+                #     e.set_ruleset_getter(self.get_ruleset)
+                if hasattr(e, "set_ruleset"):
+                    e.set_ruleset(self._ruleset)
 
         # These fields should be defined by _gen_grid
         assert self.agent_pos is not None
@@ -498,7 +531,7 @@ class BabaIsYouEnv(gym.Env):
     def _gen_grid(self, width, height):
         pass
 
-    def _reward(self):
+    def get_reward(self):
         """
         Compute the reward to be given upon success
         """
@@ -614,11 +647,15 @@ class BabaIsYouEnv(gym.Env):
 
     def change_obj_pos(self, pos, new_pos, mvt_dir=None):
         """
-        Change the position of an object in the grid
+        Change the position and the direction of an object in the grid
         """
         if np.any(pos != new_pos):
             # move the object
             e = self.grid.get(*pos)
+
+            if e is None:
+                return
+
             self.grid.set(*new_pos, e)
             self.grid.set(*pos, None)
             # change the dir of the object
@@ -633,6 +670,38 @@ class BabaIsYouEnv(gym.Env):
         new_cell = self.grid.get(*pos)
         return new_cell is not None and new_cell.is_defeat()
 
+    def try_open_shut(self, pos, new_pos):
+        """
+        Check if an open is moving towards a shut obj or vice versa, if so destroy the objects
+        """
+        obj = self.grid.get(*pos)
+        fwd_obj = self.grid.get(*new_pos)
+
+        def is_prop(obj, prop):
+            return obj is not None and hasattr(obj, prop) and getattr(obj, prop)()
+
+        if (is_prop(obj, 'is_open') and is_prop(fwd_obj, 'is_shut')) or \
+                (is_prop(obj, 'is_shut') and is_prop(fwd_obj, 'is_open')):
+            # destroy both objects
+            self.grid.pop(*pos)
+            self.grid.pop(*new_pos)
+
+        # TODO: can be removed
+        # objects = self.grid.get(*pos, z='all')
+        #
+        # def _find_prop(objects, prop):
+        #     for z, obj in enumerate(objects):
+        #         if obj is not None and hasattr(obj, prop) and getattr(obj, prop)():
+        #             return z
+        #     return None
+        #
+        # z_shut = _find_prop(objects, 'is_shut')
+        # z_open = _find_prop(objects, 'is_open')
+        # if z_shut is not None and z_open is not None:
+        #     # remove obj with highest z first
+        #     self.grid.pop(*pos, max(z_shut, z_open))
+        #     self.grid.pop(*pos, min(z_shut, z_open))
+
     def move(self, pos, dir_vec):
         """
         Return fwd_pos if can move, otherwise return pos
@@ -642,17 +711,15 @@ class BabaIsYouEnv(gym.Env):
         # is_obj_win = False
 
         fwd_pos = pos + dir_vec
-        # if fwd_cell can be pushed, try to move it
         fwd_cell = self.grid.get(*fwd_pos)
 
-        if fwd_cell is not None and fwd_cell.can_push():
+        # check if pushing an open obj on a shut obj (TODO: same for melt and hot)
+        self.try_open_shut(pos, fwd_pos)
+
+        # try to move the forward obj if it can be pushed
+        if fwd_cell is not None and fwd_cell.is_push():
             # new_fwd_pos, is_obj_win, is_obj_lose = self.move(fwd_pos, dir_vec)
             new_fwd_pos, _, _ = self.move(fwd_pos, dir_vec)
-            # TODO: hot and melt rules
-            # if is_obj_lose:
-            #     self.grid.set(*fwd_pos, None)  # destroy the obj
-            # else:
-            # self.change_obj_pos(fwd_pos, new_fwd_pos)  # move the obj
 
         # move if the fwd cell is empty or can overlap
         fwd_cell = self.grid.get(*fwd_pos)
@@ -661,7 +728,8 @@ class BabaIsYouEnv(gym.Env):
         else:
             new_pos = pos
 
-        # TODO: move the agent here or just compute the mvts and execute them later?
+        # TODO: move the agent here (what is currently implemented) or just compute the mvts and execute them later?
+
         # check if win or lose before moving the agent
         is_win = self.is_win_pos(new_pos)
         is_lose = self.is_lose_pos(new_pos)
@@ -735,7 +803,13 @@ class BabaIsYouEnv(gym.Env):
 
             reward, done = self.reward()
 
-            self._ruleset = extract_ruleset(self.grid, default_ruleset=self.default_ruleset)
+            # self._ruleset = extract_ruleset(self.grid, default_ruleset=self.default_ruleset)
+            self._ruleset.set(extract_ruleset(self.grid, default_ruleset=self.default_ruleset))
+
+            # check if some bocks need to be replaced (obj1 is obj2 rules)
+            for (obj1, obj2) in self._ruleset.get('replace', []):
+                self.grid.replace(obj1, obj2)
+
 
         if self.step_count >= self.max_steps:
             done = True
@@ -747,7 +821,7 @@ class BabaIsYouEnv(gym.Env):
     def reward(self):
         if self.is_win:
             done = True
-            reward = self._reward()
+            reward = self.get_reward()
         elif self.is_lose:
             done = True
             reward = -1
@@ -801,3 +875,9 @@ class BabaIsYouEnv(gym.Env):
     def close(self):
         if self.window:
             self.window.close()
+
+def put_rule(env, obj: str, property: str, positions,
+             is_push=True):
+    env.put_obj(RuleObject(obj, is_push=is_push), *positions[0])
+    env.put_obj(RuleIs(is_push=is_push), *positions[1])
+    env.put_obj(RuleProperty(property, is_push=is_push), *positions[2])

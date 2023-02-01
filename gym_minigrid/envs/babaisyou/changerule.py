@@ -1,6 +1,6 @@
 from gym_minigrid.babaisyou import BabaIsYouEnv, BabaIsYouGrid
-from gym_minigrid.envs.babaisyou.core.flexible_world_object import FBall, FWall, Baba, RuleObject, RuleIs, RuleProperty
-from gym_minigrid.envs.babaisyou.core.utils import grid_random_position
+from gym_minigrid.flexible_world_object import FBall, FWall, Baba, RuleObject, RuleIs, RuleProperty
+from gym_minigrid.utils import grid_random_position
 from gym_minigrid.envs.babaisyou.goto import BaseGridEnv, random_rule_pos
 from gym_minigrid.minigrid import Grid, MissionSpace, MiniGridEnv
 
@@ -41,7 +41,7 @@ class ChangeRuleEnv(MiniGridEnv):
         # self.put_obj(RuleWall('fwall'), 2, 2)
         self.put_obj(RuleIs(), 3, 2)
         # self.put_obj(RuleProperty('can_overlap'), 5, 2)
-        self.put_obj(RuleProperty('is_block'), 4, 2)
+        self.put_obj(RuleProperty('is_stop'), 4, 2)
 
         self.put_obj(RuleProperty('is_goal'), 5, height-3)
         # self.put_obj(RuleObject('fwall'), 3, height-3)
@@ -64,9 +64,9 @@ class TestRuleEnv(BabaIsYouEnv):
             RuleIs(),
             RuleIs(),
             RuleIs(),
-            RuleProperty('is_block'),
+            RuleProperty('is_stop'),
             RuleProperty('is_goal'),
-            RuleProperty('can_push'),
+            RuleProperty('is_push'),
             RuleProperty('is_pull'),
             RuleProperty('is_defeat'),
             RuleProperty('is_move'),
@@ -118,7 +118,7 @@ class MoveBlockEnv(BabaIsYouEnv):
 
     def reward(self):
         if self.grid.get(*self.goal_pos) == self.goal_obj:
-            return self._reward(), True
+            return self.get_reward(), True
         else:
             return 0, False
 
@@ -149,6 +149,6 @@ class MakeRuleEnv(BabaIsYouEnv):
     def reward(self):
         ruleset = self.get_ruleset()
         if ruleset['is_goal'].get('fball', False):
-            return self._reward(), True
+            return self.get_reward(), True
         else:
             return 0, False

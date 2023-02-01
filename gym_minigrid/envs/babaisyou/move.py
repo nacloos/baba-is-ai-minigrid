@@ -198,12 +198,15 @@ class OpenAndGoToWinEnv(BabaIsYouEnv):
 
 
 class FourRoomEnv(BabaIsYouEnv):
-    def __init__(self, open_shut_task=False, show_shut_obj=True, height=15, width=15, randomize=False, **kwargs):
+    def __init__(self, open_shut_task=False, show_shut_obj=True, height=15, width=15, randomize=False, objects=None,
+                 rule_is_push=True, **kwargs):
         # default_ruleset = {
             # "is_agent": {"baba": True},
             # "is_open": {"fkey": True},
             # "is_stop": {"fdoor": True}  # TODO: bug with wall is stop
         # }
+        self.objects = ["fkey", "fdoor", "fball", "fwall"] if objects is None else objects
+        self.rule_is_push = rule_is_push  # can push rule blocks if true
         default_ruleset = {}
         self.open_shut_task = open_shut_task
         self.show_shut_obj = show_shut_obj
@@ -218,7 +221,8 @@ class FourRoomEnv(BabaIsYouEnv):
         self.grid.vert_wall(width//2, 1, length=height-2, obj_type=Wall)
         self.grid.horz_wall(1, height//2, length=width-2, obj_type=Wall)
 
-        objects = ["fkey", "fdoor", "fball", "fwall"]
+        # TODO
+        objects = self.objects
         rule_objects = ["baba", "fkey", "fdoor", "fkey"]
 
         def _permute(arr):
@@ -230,17 +234,17 @@ class FourRoomEnv(BabaIsYouEnv):
             objects = _permute(objects)
             rule_objects = _permute(objects)
 
-        put_rule(self, objects[0], 'is_push', [(2+i, 2) for i in range(3)])
-        put_rule(self, "baba", 'is_agent', [(2+i, 4) for i in range(3)])
+        put_rule(self, objects[0], 'is_push', [(2+i, 2) for i in range(3)], is_push=self.rule_is_push)
+        put_rule(self, "baba", 'is_agent', [(2+i, 4) for i in range(3)], is_push=self.rule_is_push)
 
-        put_rule(self, objects[1], 'is_shut', [(2+i, height-5) for i in range(3)])
-        put_rule(self, rule_objects[1], 'is_open', [(2+i, height-3) for i in range(3)])
+        put_rule(self, objects[1], 'is_shut', [(2+i, height-5) for i in range(3)], is_push=self.rule_is_push)
+        put_rule(self, rule_objects[1], 'is_open', [(2+i, height-3) for i in range(3)], is_push=self.rule_is_push)
 
-        put_rule(self, objects[2], 'is_goal', [(width-5+i, 2) for i in range(3)])
-        put_rule(self, rule_objects[2], 'is_stop', [(width-5+i, 4) for i in range(3)])
+        put_rule(self, objects[2], 'is_goal', [(width-5+i, 2) for i in range(3)], is_push=self.rule_is_push)
+        put_rule(self, rule_objects[2], 'is_stop', [(width-5+i, 4) for i in range(3)], is_push=self.rule_is_push)
 
-        put_rule(self, objects[3], 'is_stop', [(width-5+i, height-3) for i in range(3)])
-        put_rule(self, rule_objects[3], "is_defeat", [(width-5+i, height-5) for i in range(3)])
+        put_rule(self, objects[3], 'is_stop', [(width-5+i, height-3) for i in range(3)], is_push=self.rule_is_push)
+        put_rule(self, rule_objects[3], "is_defeat", [(width-5+i, height-5) for i in range(3)], is_push=self.rule_is_push)
 
         def _put_obj(name, pos):
             self.grid.set(*pos, None)  # first remove the wall

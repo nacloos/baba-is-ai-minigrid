@@ -876,8 +876,7 @@ class BabaIsYouEnv(gym.Env):
         if self.window:
             self.window.close()
 
-def put_rule(env, obj: str, property: str, positions,
-             is_push=True):
+def put_rule(env, obj: str, property: str, positions, is_push=True):
     env.put_obj(RuleObject(obj, is_push=is_push), *positions[0])
     env.put_obj(RuleIs(is_push=is_push), *positions[1])
     env.put_obj(RuleProperty(property, is_push=is_push), *positions[2])

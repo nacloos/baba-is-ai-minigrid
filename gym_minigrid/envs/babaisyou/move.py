@@ -208,7 +208,7 @@ class FourRoomEnv(BabaIsYouEnv):
         self.open_shut_task = open_shut_task
         self.show_shut_obj = show_shut_obj
         self.randomize = randomize
-        super().__init__(width=width, height=height, max_steps=4*width*height,
+        super().__init__(width=width, height=height, max_steps=200,
                          default_ruleset=default_ruleset, **kwargs)
 
     def _gen_grid(self, width, height):

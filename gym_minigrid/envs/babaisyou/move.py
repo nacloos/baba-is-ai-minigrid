@@ -211,7 +211,7 @@ class FourRoomEnv(BabaIsYouEnv):
         self.open_shut_task = open_shut_task
         self.show_shut_obj = show_shut_obj
         self.randomize = randomize
-        super().__init__(width=width, height=height, max_steps=200,
+        super().__init__(width=width, height=height, max_steps=2000,
                          default_ruleset=default_ruleset, **kwargs)
 
     def _gen_grid(self, width, height):
@@ -268,8 +268,12 @@ class FourRoomEnv(BabaIsYouEnv):
             self.put_obj(Baba(), 4, 3)
         self.place_agent()
 
-
     def reward(self):
+        # directly lose if no object is the agent
+        ruleset = self.get_ruleset()
+        if ruleset['is_agent'] == {}:
+            return -1, True
+
         if self.open_shut_task:
             assert self._shut_obj_pos is not None
             # check if the shut obj is destroyed

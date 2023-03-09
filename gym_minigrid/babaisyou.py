@@ -854,3 +854,20 @@ def put_rule(env, obj: str, property: str, positions, is_push=True):
     env.put_obj(RuleObject(obj, is_push=is_push), *positions[0])
     env.put_obj(RuleIs(is_push=is_push), *positions[1])
     env.put_obj(RuleProperty(property, is_push=is_push), *positions[2])
+
+
+def place_rule(env, obj: str, property: str):
+    # TODO: vertical rules
+    def _is_invalid_rule_pos(env, pos):
+        # check if a rule can be placed horizontally starting from pos
+        is_empty = \
+            env.grid.get(*pos) is None and \
+            env.grid.get(pos[0]+1, pos[1]) is None and \
+            env.grid.get(pos[0]+2, pos[1]) is None
+        is_inside_grid = pos[0] < env.width-4
+        return not (is_empty and is_inside_grid)
+
+    # sample the pos of the leftmost rule block
+    pos = env.place_obj(None, reject_fn=_is_invalid_rule_pos)
+    put_rule(env, obj, property, [pos, (pos[0]+1, pos[1]), (pos[0]+2, pos[1])])
+

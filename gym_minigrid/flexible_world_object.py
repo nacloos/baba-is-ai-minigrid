@@ -70,23 +70,27 @@ add_object_types(objects)
 add_object_types(['rule', 'rule_object', 'rule_is', 'rule_property'])
 
 
-def make_obj(name: str):
+def make_obj(name: str, color: str = None):
     """
     Make an object from a string name
     """
+    kwargs = {'color': color} if color is not None else {}
+
     # TODO: make it more general
     if name == "fwall" or name == "wall":
-        return FWall()
+        obj_cls = FWall
     elif name == "fball" or name == "ball":
-        return FBall()
+        obj_cls = FBall
     elif name == "fkey" or name == "key":
-        return FKey()
+        obj_cls = FKey
     elif name == "fdoor" or name == "door":
-        return FDoor()
+        obj_cls = FDoor
     elif name == "baba":
-        return Baba()
+        obj_cls = Baba
     else:
         raise ValueError(name)
+
+    return obj_cls(**kwargs)
 
 
 class RuleBlock(WorldObj):

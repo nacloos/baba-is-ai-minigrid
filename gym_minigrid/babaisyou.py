@@ -10,7 +10,7 @@ from gym import spaces
 from gym.utils import seeding
 
 # Size in pixels of a tile in the full-scale human view
-from gym_minigrid.flexible_world_object import make_obj, RuleObject, RuleIs, RuleProperty, Ruleset
+from gym_minigrid.flexible_world_object import make_obj, RuleObject, RuleIs, RuleProperty, Ruleset, RuleBlock
 from gym_minigrid.minigrid import Grid, TILE_PIXELS, DIR_TO_VEC, WorldObj, Wall, OBJECT_TO_IDX
 from gym_minigrid.rendering import (
     downsample,
@@ -476,56 +476,30 @@ class BabaIsYouEnv(gym.Env):
         A grid cell is represented by 2-character string, the first one for
         the object and the second one for the color.
         """
-        # TODO
-        return "BabaIsYouEnv"
-        # Map of object types to short string
-        OBJECT_TO_STR = {
-            "wall": "W",
-            "floor": "F",
-            "door": "D",
-            "key": "K",
-            "ball": "A",
-            "box": "B",
-            "goal": "G",
-            "lava": "V",
-            "rule_object": "RO",
-            "rule_is": "IS",
-            "rule_property": "RP"
-        }
-
-        # Map agent's direction to short string
-        AGENT_DIR_TO_STR = {0: ">", 1: "V", 2: "<", 3: "^"}
-
-        str = ""
-
+        grid = []
         for j in range(self.grid.height):
-
+            row = []
             for i in range(self.grid.width):
-                if i == self.agent_pos[0] and j == self.agent_pos[1]:
-                    str += 2 * AGENT_DIR_TO_STR[self.agent_dir]
-                    continue
-
                 c = self.grid.get(i, j)
-
                 if c is None:
-                    str += "  "
-                    continue
+                    name = 'empty'
+                elif isinstance(c, RuleBlock):
+                    name = c.name.upper()
+                else:
+                    name = c.type
+                # TODO
+                if name[0] == 'f' and name != 'flag':
+                    name = name[1:]
+                row.append(name)
+            grid.append(row)
 
-                if c.type == "door":
-                    if c.is_open:
-                        str += "__"
-                    elif c.is_locked:
-                        str += "L" + c.color[0].upper()
-                    else:
-                        str += "D" + c.color[0].upper()
-                    continue
-
-                str += OBJECT_TO_STR[c.type] + c.color[0].upper()
-
-            if j < self.grid.height - 1:
-                str += "\n"
-
-        return str
+        res = ""
+        for row in grid:
+            res += "["
+            res += ", ".join(row)
+            res += "], \n"
+        res = res[:-3]  # remove last ", \n"
+        return res
 
     @abstractmethod
     def _gen_grid(self, width, height):
@@ -876,8 +850,24 @@ class BabaIsYouEnv(gym.Env):
         if self.window:
             self.window.close()
 
-def put_rule(env, obj: str, property: str, positions,
-             is_push=True):
+def put_rule(env, obj: str, property: str, positions, is_push=True):
     env.put_obj(RuleObject(obj, is_push=is_push), *positions[0])
     env.put_obj(RuleIs(is_push=is_push), *positions[1])
     env.put_obj(RuleProperty(property, is_push=is_push), *positions[2])
+
+
+def place_rule(env, obj: str, property: str):
+    # TODO: vertical rules
+    def _is_invalid_rule_pos(env, pos):
+        # check if a rule can be placed horizontally starting from pos
+        is_empty = \
+            env.grid.get(*pos) is None and \
+            env.grid.get(pos[0]+1, pos[1]) is None and \
+            env.grid.get(pos[0]+2, pos[1]) is None
+        is_inside_grid = pos[0] < env.width-4
+        return not (is_empty and is_inside_grid)
+
+    # sample the pos of the leftmost rule block
+    pos = env.place_obj(None, reject_fn=_is_invalid_rule_pos)
+    put_rule(env, obj, property, [pos, (pos[0]+1, pos[1]), (pos[0]+2, pos[1])])
+

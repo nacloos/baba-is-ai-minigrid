@@ -47,6 +47,9 @@ name_mapping = {
 # by default, add the displayed name is the type of the object
 name_mapping.update({o: o for o in objects if o not in name_mapping})
 
+# TODO: bidirectional dict
+name_mapping_inverted = {v: k for k, v in name_mapping.items()}
+
 
 def add_object_types(object_types):
     last_idx = len(OBJECT_TO_IDX)-1
@@ -67,23 +70,27 @@ add_object_types(objects)
 add_object_types(['rule', 'rule_object', 'rule_is', 'rule_property'])
 
 
-def make_obj(name: str):
+def make_obj(name: str, color: str = None):
     """
     Make an object from a string name
     """
+    kwargs = {'color': color} if color is not None else {}
+
     # TODO: make it more general
     if name == "fwall" or name == "wall":
-        return FWall()
+        obj_cls = FWall
     elif name == "fball" or name == "ball":
-        return FBall()
+        obj_cls = FBall
     elif name == "fkey" or name == "key":
-        return FKey()
+        obj_cls = FKey
     elif name == "fdoor" or name == "door":
-        return FDoor()
+        obj_cls = FDoor
     elif name == "baba":
-        return Baba()
+        obj_cls = Baba
     else:
         raise ValueError(name)
+
+    return obj_cls(**kwargs)
 
 
 class RuleBlock(WorldObj):
@@ -118,15 +125,19 @@ class RuleBlock(WorldObj):
 
 class RuleObject(RuleBlock):
     def __init__(self, obj, is_push=True):
-        super().__init__(obj, 'rule_object', 'purple', is_push=is_push)
+        obj = name_mapping_inverted[obj] if obj not in objects else obj
         assert obj in objects, "{} not in {}".format(obj, objects)
+
+        super().__init__(obj, 'rule_object', 'purple', is_push=is_push)
         self.object = obj
 
 
 class RuleProperty(RuleBlock):
     def __init__(self, property, is_push=True):
-        super().__init__(property, 'rule_property', 'purple', is_push=is_push)
+        property = name_mapping_inverted[property] if property not in properties else property
         assert property in properties, "{} not in {}".format(property, properties)
+
+        super().__init__(property, 'rule_property', 'purple', is_push=is_push)
         self.property = property
 
 

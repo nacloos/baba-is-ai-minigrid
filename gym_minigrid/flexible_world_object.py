@@ -2,9 +2,9 @@ import math
 
 import numpy as np
 
-from gym_minigrid.utils import add_img_text
-from gym_minigrid.minigrid import WorldObj, COLORS, OBJECT_TO_IDX, COLOR_TO_IDX
-from gym_minigrid.rendering import fill_coords, point_in_circle, point_in_rect, point_in_triangle, rotate_fn
+from utils import add_img_text
+from minigrid import WorldObj, COLORS, OBJECT_TO_IDX, COLOR_TO_IDX
+from rendering import fill_coords, point_in_circle, point_in_rect, point_in_triangle, rotate_fn
 
 
 properties = [
@@ -42,7 +42,14 @@ name_mapping = {
     'is_pull': 'pull',
     'is_move': 'move',
     'is_open': 'open',
-    'is_shut': 'shut'
+    'is_shut': 'shut',
+    'red': 'red',
+    'green': 'green',
+    'blue': 'blue',
+    'purple': 'purple',
+    'yellow': 'yellow',
+    'grey': 'grey',
+    'white': 'white'
 }
 # by default, add the displayed name is the type of the object
 name_mapping.update({o: o for o in objects if o not in name_mapping})
@@ -67,24 +74,39 @@ def add_color_types(color_types):
 
 add_color_types(name_mapping.values())
 add_object_types(objects)
-add_object_types(['rule', 'rule_object', 'rule_is', 'rule_property'])
+add_object_types(['rule', 'rule_object', 'rule_is', 'rule_property', 'rule_color'])
 
 
-def make_obj(name: str):
+def make_obj(name: str, obj_color=None):
     """
     Make an object from a string name
     """
     # TODO: make it more general
     if name == "fwall" or name == "wall":
-        return FWall()
+        if obj_color is not None:
+            return FWall(color=obj_color)
+        else:
+            return FWall()
     elif name == "fball" or name == "ball":
-        return FBall()
+        if obj_color is not None:
+            return FBall(color=obj_color)
+        else:
+            return FBall()
     elif name == "fkey" or name == "key":
-        return FKey()
+        if obj_color is not None:
+            return FKey(color=obj_color)
+        else:
+            return FKey()
     elif name == "fdoor" or name == "door":
-        return FDoor()
+        if obj_color is not None:
+            return FDoor(color=obj_color)
+        else:
+            return FDoor()
     elif name == "baba":
-        return Baba()
+        if obj_color is not None:
+            return Baba(color=obj_color)
+        else:
+            return Baba()
     else:
         raise ValueError(name)
 
@@ -142,6 +164,14 @@ class RuleIs(RuleBlock):
         super().__init__('is', 'rule_is', 'purple', is_push=is_push)
 
 
+class RuleColor(RuleBlock):
+    def __init__(self, obj_color, is_push=True):
+        assert obj_color in COLOR_TO_IDX, "{} not in {}".format(obj_color, COLOR_TO_IDX)
+
+        super().__init__(obj_color, 'rule_color', 'purple', is_push=is_push)
+        self.obj_color = obj_color
+
+
 class Ruleset:
     def __init__(self, ruleset_dict):
         self.ruleset_dict = ruleset_dict
@@ -157,14 +187,22 @@ class Ruleset:
 
     def __getattr__(self, item):
         return getattr(self.ruleset_dict, item)
+    
+    def __str__(self):
+        return f'Ruleset dict: {self.ruleset_dict}'
 
 
 
-def make_prop_fn(prop, typ):
+def make_prop_fn(prop, typ, color):
     """
     Make a method that retrieves the property of a FlexibleWorldObj in the ruleset
     """
+    # import pdb
+    # if (typ == 'fball' and color == "grey" and prop == "is_goal"): pdb.set_trace()
     def get_prop(self):
+        # import pdb
+        # if (typ == 'fball' and color == "green" and prop == "is_goal"): pdb.set_trace()
+
         ruleset = self.get_ruleset()
 
         # TODO: is_pull, is_agent implies is_stop
@@ -172,8 +210,20 @@ def make_prop_fn(prop, typ):
             if ruleset['is_pull'].get(typ, False) or ruleset['is_agent'].get(typ, False):
                 ruleset['is_stop'][typ] = True
 
-        return ruleset[prop].get(typ, False)
-    return get_prop
+        # check color
+        color_key = typ + "_color"
+        color_set = ruleset[prop].get(color_key, [])
+
+        # import pdb
+        # if (typ == 'fball'): pdb.set_trace()
+
+        if ruleset[prop].get(typ, False): # object type set to True
+
+            if (len(color_set) == 0) or (color in color_set): # object fits color specifications
+                return True
+        return False
+    
+    return get_prop    
 
 
 class FlexibleWorldObj(WorldObj):
@@ -184,7 +234,11 @@ class FlexibleWorldObj(WorldObj):
         self.dir = 0  # order: right, down, left, up
 
         for prop in properties:
-            setattr(self.__class__, prop, make_prop_fn(prop, self.type))
+            setattr(self.__class__, prop, make_prop_fn(prop, self.type, self.color))
+
+        # import pdb
+        # if (type == 'fball' and color == "grey"): pdb.set_trace()
+        
 
     # TODO: might be better to use a Ruleset object
     # def set_ruleset_getter(self, get_ruleset):
@@ -192,6 +246,7 @@ class FlexibleWorldObj(WorldObj):
     #
     # def get_ruleset(self):
     #     return self._get_ruleset()
+
 
     def set_ruleset(self, ruleset):
         self._ruleset = ruleset
@@ -202,6 +257,10 @@ class FlexibleWorldObj(WorldObj):
     # compatibility with WorldObj
     def can_overlap(self):
         return not self.is_stop()
+    
+    def __str__(self):
+        result = f'Attributes: is_goal = {self.is_goal}, is_agent = {self.is_agent}'
+    
 
 
 class FWall(FlexibleWorldObj):
@@ -215,6 +274,9 @@ class FWall(FlexibleWorldObj):
 class FBall(FlexibleWorldObj):
     def __init__(self, color="green"):
         super().__init__("fball", color)
+
+        # import pdb
+        # if (color == "grey"): pdb.set_trace()
 
     def render(self, img):
         fill_coords(img, point_in_circle(0.5, 0.5, 0.31), COLORS[self.color])

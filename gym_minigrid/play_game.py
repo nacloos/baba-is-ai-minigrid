@@ -1,11 +1,11 @@
 import gymnasium as gym
 import pygame
-from gym_minigrid.babaisyou import BabaIsYouEnv #, BabaIsYouGrid
-from gym_minigrid.minigrid import MiniGridEnv #, Grid, MissionSpace,
+from babaisyou import BabaIsYouEnv #, BabaIsYouGrid
+from minigrid import MiniGridEnv #, Grid, MissionSpace,
 
-from gym_minigrid import register_minigrid_envs
+# import register_minigrid_envs
 from gym.envs.registration import register
-from gym_minigrid.envs.babaisyou import TestRuleEnv
+from envs.babaisyou import TestRuleEnv, Experiment2, Experiment3, OpenAndGoToWinEnv, AdjExperiment1
 
 from gym.utils.play import display_arr
 from pygame import VIDEORESIZE
@@ -158,6 +158,27 @@ def play(env, transpose=True, fps=30, zoom=None, callback=None, keys_to_action=N
         clock.tick(fps)
     pygame.quit()
 
+
+# New Experiments
+env1 = AdjExperiment1('fball', 'fball', 'grey') #doesn't work when have same object BUT rule written correctly
+print(str(env1.get_ruleset()))
+play_babaisyou(env1)
+
+
+
+# -----------------------------------------------
+
+# Play experiment environments
+# env2 = Experiment2('fkey', 'fdoor')
+# play_babaisyou(env2)
+
+# env3 = Experiment3('fwall', 'fkey')
+# play_babaisyou(env3)
+
+# test = OpenAndGoToWinEnv(task="open_shut")
+# play_babaisyou(test)
+
+# -------------------------------------------------
 
 # Uncomment to Play Test Cases from test_babaisyou.py
 # env = TestRuleEnv()

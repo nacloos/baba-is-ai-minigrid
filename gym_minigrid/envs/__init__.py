@@ -1,1 +1,1 @@
-from gym_minigrid.envs.empty import EmptyEnv
+from envs.empty import EmptyEnv

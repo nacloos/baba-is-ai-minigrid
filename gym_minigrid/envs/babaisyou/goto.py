@@ -5,10 +5,10 @@ from typing import Tuple
 
 import numpy as np
 
-from gym_minigrid.flexible_world_object import FBall, FWall, RuleProperty, RuleIs, RuleObject, Baba
-from gym_minigrid.utils import grid_random_position
-from gym_minigrid.minigrid import MiniGridEnv, MissionSpace, Grid
-from ...babaisyou import BabaIsYouGrid, BabaIsYouEnv
+from flexible_world_object import FBall, FWall, RuleProperty, RuleIs, RuleObject, Baba
+from utils import grid_random_position
+from minigrid import MiniGridEnv, MissionSpace, Grid
+from babaisyou import BabaIsYouGrid, BabaIsYouEnv
 
 RuleObjPos = Tuple[int, int]
 RuleIsPos = Tuple[int, int]

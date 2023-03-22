@@ -1,8 +1,8 @@
-from gym_minigrid.babaisyou import BabaIsYouEnv, BabaIsYouGrid
-from gym_minigrid.flexible_world_object import FBall, FWall, Baba, RuleObject, RuleIs, RuleProperty
-from gym_minigrid.utils import grid_random_position
-from gym_minigrid.envs.babaisyou.goto import BaseGridEnv, random_rule_pos
-from gym_minigrid.minigrid import Grid, MissionSpace, MiniGridEnv
+from babaisyou import BabaIsYouEnv, BabaIsYouGrid
+from flexible_world_object import FBall, FWall, Baba, RuleObject, RuleIs, RuleProperty
+from utils import grid_random_position
+from envs.babaisyou.goto import BaseGridEnv, random_rule_pos
+from minigrid import Grid, MissionSpace, MiniGridEnv
 
 
 class ChangeRuleEnv(MiniGridEnv):

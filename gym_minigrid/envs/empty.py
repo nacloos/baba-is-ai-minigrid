@@ -1,5 +1,5 @@
 
-from gym_minigrid.minigrid import Goal, Grid, MiniGridEnv, MissionSpace
+from minigrid import Goal, Grid, MiniGridEnv, MissionSpace
 
 
 class EmptyEnv(MiniGridEnv):

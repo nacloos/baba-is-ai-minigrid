@@ -10,9 +10,9 @@ from gym import spaces
 from gym.utils import seeding
 
 # Size in pixels of a tile in the full-scale human view
-from gym_minigrid.flexible_world_object import make_obj, RuleObject, RuleIs, RuleProperty, Ruleset, RuleBlock
-from gym_minigrid.minigrid import Grid, TILE_PIXELS, DIR_TO_VEC, WorldObj, Wall, OBJECT_TO_IDX
-from gym_minigrid.rendering import (
+from flexible_world_object import make_obj, RuleObject, RuleIs, RuleProperty, Ruleset, RuleBlock
+from minigrid import Grid, TILE_PIXELS, DIR_TO_VEC, WorldObj, Wall, OBJECT_TO_IDX
+from rendering import (
     downsample,
     fill_coords,
     highlight_img,
@@ -22,8 +22,8 @@ from gym_minigrid.rendering import (
     point_in_triangle,
     rotate_fn,
 )
-from gym_minigrid.window import Window
-from gym_minigrid.rule import extract_ruleset
+from window import Window
+from rule import extract_ruleset
 
 
 def rand_int(low, high):
@@ -120,17 +120,29 @@ class BabaIsYouGrid:
         else:
             return self.grid[j * self.width + i][-2]
 
-    def replace(self, obj_type1: str, obj_type2: str):
+    def replace(self, obj_type1: str, obj_type2: str, color=None, first_obj=True):
         for j in range(0, self.height):
             for i in range(0, self.width):
                 cell = self.get(i, j)
                 if cell is None:
                     continue
-
+                
                 if cell.type == obj_type1:
-                    new_obj = make_obj(obj_type2)
-                    new_obj.set_ruleset(self._ruleset)
-                    self.set(i, j, new_obj)
+                    if color is None:
+                        new_obj = make_obj(obj_type2)
+                        new_obj.set_ruleset(self._ruleset)
+                        self.set(i, j, new_obj)
+                    elif first_obj:
+                        # update if color of cell matches
+                        if cell.color == color:
+                            new_obj = make_obj(obj_type2)
+                            new_obj.set_ruleset(self._ruleset)
+                            self.set(i, j, new_obj)
+                    else:
+                        new_obj = make_obj(obj_type2, obj_color=color)
+                        new_obj.set_ruleset(self._ruleset)
+                        self.set(i, j, new_obj)
+
 
     def __iter__(self):
         for elem in self.grid.__iter__():
@@ -638,6 +650,8 @@ class BabaIsYouEnv(gym.Env):
 
     def is_win_pos(self, pos):
         new_cell = self.grid.get(*pos)
+        # import pdb
+        # if (pos[0] == 6 and pos[1] == 6): pdb.set_trace()
         return new_cell is not None and new_cell.is_goal()
 
     def is_lose_pos(self, pos):
@@ -705,9 +719,16 @@ class BabaIsYouEnv(gym.Env):
         # TODO: move the agent here (what is currently implemented) or just compute the mvts and execute them later?
 
         # check if win or lose before moving the agent
+
+        # import pdb
+        # if (new_pos[0] == 6 and new_pos[1] == 6): pdb.set_trace()
+
         is_win = self.is_win_pos(new_pos)
         is_lose = self.is_lose_pos(new_pos)
         self.change_obj_pos(pos, new_pos, dir_vec)
+
+        # import pdb
+        # if (new_pos[0] == 6 and new_pos[1] == 6): pdb.set_trace()
 
         # pull object in the cell behind
         bwd_pos = pos - dir_vec
@@ -781,8 +802,8 @@ class BabaIsYouEnv(gym.Env):
             self._ruleset.set(extract_ruleset(self.grid, default_ruleset=self.default_ruleset))
 
             # check if some bocks need to be replaced (obj1 is obj2 rules)
-            for (obj1, obj2) in self._ruleset.get('replace', []):
-                self.grid.replace(obj1, obj2)
+            for (obj1, obj2, obj_color, obj_boolean) in self._ruleset.get('replace', []):
+                    self.grid.replace(obj1, obj2, obj_color, obj_boolean)
 
 
         if self.step_count >= self.max_steps:

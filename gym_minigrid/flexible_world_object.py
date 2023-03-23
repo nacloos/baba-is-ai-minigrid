@@ -193,7 +193,7 @@ class Ruleset:
 
 
 
-def make_prop_fn(prop, typ, color):
+def make_prop_fn(prop):
     """
     Make a method that retrieves the property of a FlexibleWorldObj in the ruleset
     """
@@ -203,6 +203,9 @@ def make_prop_fn(prop, typ, color):
         # import pdb
         # if (typ == 'fball' and color == "green" and prop == "is_goal"): pdb.set_trace()
 
+        # retrieve the type and color specific to the instance 'self' (the function is the same for all instances)
+        typ = self.type
+        color = self.color
         ruleset = self.get_ruleset()
 
         # TODO: is_pull, is_agent implies is_stop
@@ -234,7 +237,8 @@ class FlexibleWorldObj(WorldObj):
         self.dir = 0  # order: right, down, left, up
 
         for prop in properties:
-            setattr(self.__class__, prop, make_prop_fn(prop, self.type, self.color))
+            # create a method for each property and bind it to the class (same for all the instances of that class)
+            setattr(self.__class__, prop, make_prop_fn(prop))
 
         # import pdb
         # if (type == 'fball' and color == "grey"): pdb.set_trace()

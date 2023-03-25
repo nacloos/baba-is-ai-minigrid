@@ -67,7 +67,7 @@ def add_color_types(color_types):
 
 add_color_types(name_mapping.values())
 add_object_types(objects)
-add_object_types(['rule', 'rule_object', 'rule_is', 'rule_property'])
+add_object_types(['rule', 'rule_object', 'rule_is', 'rule_property', 'rule_color'])
 
 
 def make_obj(name: str, color: str = None):
@@ -144,6 +144,14 @@ class RuleProperty(RuleBlock):
 class RuleIs(RuleBlock):
     def __init__(self, is_push=True):
         super().__init__('is', 'rule_is', 'purple', is_push=is_push)
+
+
+class RuleColor(RuleBlock):
+    def __init__(self, obj_color, is_push=True):
+        assert obj_color in COLOR_TO_IDX, "{} not in {}".format(obj_color, COLOR_TO_IDX)
+
+        super().__init__(obj_color, 'rule_color', 'purple', is_push=is_push)
+        self.obj_color = obj_color
 
 
 class Ruleset:

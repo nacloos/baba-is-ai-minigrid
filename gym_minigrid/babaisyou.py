@@ -1,5 +1,6 @@
 import hashlib
 import math
+from copy import copy
 from abc import abstractmethod
 from enum import IntEnum
 from typing import Any, Callable, Optional, Union
@@ -852,6 +853,7 @@ class BabaIsYouEnv(gym.Env):
 
 def put_rule(env, obj: str, property: str, positions, color: str = None, is_push=True):
     if color is not None:
+        positions = copy(positions)
         color_pos = positions.pop(0)
         env.put_obj(RuleColor(color, is_push=is_push), *color_pos)
 
@@ -878,6 +880,6 @@ def place_rule(env, obj: str, property: str, color: str = None):
     # sample the pos of the leftmost rule block
     pos = env.place_obj(None, reject_fn=_is_invalid_rule_pos)
     positions = [(pos[0]+i, pos[1]) for i in range(n_blocks)]
-
+    
     put_rule(env, obj, property, positions, color=color)
-
+    return positions

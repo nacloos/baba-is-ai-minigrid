@@ -27,6 +27,7 @@ objects = [
     "fkey",
     'baba'
 ]
+properties.extend(objects)  # an object can also be a property (e.g. ball is key)
 
 name_mapping = {
     'fwall': 'wall',

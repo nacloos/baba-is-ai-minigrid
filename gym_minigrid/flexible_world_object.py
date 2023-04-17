@@ -156,6 +156,10 @@ class RuleColor(RuleBlock):
 
 
 class Ruleset:
+    """
+    Each object has a reference to the ruleset object, which is automatically updated (would have to manually update it
+    if were using a dict instead).
+    """
     def __init__(self, ruleset_dict):
         self.ruleset_dict = ruleset_dict
 
@@ -168,8 +172,12 @@ class Ruleset:
     def __setitem__(self, key, value):
         self.ruleset_dict[key] = value
 
-    def __getattr__(self, item):
-        return getattr(self.ruleset_dict, item)
+    # TODO: cause infinite loop when using vec env
+    # def __getattr__(self, item):
+    #     return getattr(self.ruleset_dict, item)
+
+    def get(self, *args, **kwargs):
+        return self.ruleset_dict.get(*args, **kwargs)
 
 
 

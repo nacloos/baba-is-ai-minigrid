@@ -1,5 +1,6 @@
 import hashlib
 import math
+from copy import copy
 from abc import abstractmethod
 from enum import IntEnum
 from typing import Any, Callable, Optional, Union
@@ -10,7 +11,7 @@ from gym import spaces
 from gym.utils import seeding
 
 # Size in pixels of a tile in the full-scale human view
-from gym_minigrid.flexible_world_object import make_obj, RuleObject, RuleIs, RuleProperty, Ruleset, RuleBlock
+from gym_minigrid.flexible_world_object import make_obj, RuleColor, RuleObject, RuleIs, RuleProperty, Ruleset, RuleBlock
 from gym_minigrid.minigrid import Grid, TILE_PIXELS, DIR_TO_VEC, WorldObj, Wall, OBJECT_TO_IDX
 from gym_minigrid.rendering import (
     downsample,
@@ -850,24 +851,35 @@ class BabaIsYouEnv(gym.Env):
         if self.window:
             self.window.close()
 
-def put_rule(env, obj: str, property: str, positions, is_push=True):
+def put_rule(env, obj: str, property: str, positions, color: str = None, is_push=True):
+    if color is not None:
+        positions = copy(positions)
+        color_pos = positions.pop(0)
+        env.put_obj(RuleColor(color, is_push=is_push), *color_pos)
+
     env.put_obj(RuleObject(obj, is_push=is_push), *positions[0])
     env.put_obj(RuleIs(is_push=is_push), *positions[1])
     env.put_obj(RuleProperty(property, is_push=is_push), *positions[2])
 
 
-def place_rule(env, obj: str, property: str):
+def place_rule(env, obj: str, property: str, color: str = None):
     # TODO: vertical rules
+    n_blocks = 3 if color is None else 4
+
     def _is_invalid_rule_pos(env, pos):
+        # pos: list of positions for each block of the rule
         # check if a rule can be placed horizontally starting from pos
-        is_empty = \
-            env.grid.get(*pos) is None and \
-            env.grid.get(pos[0]+1, pos[1]) is None and \
-            env.grid.get(pos[0]+2, pos[1]) is None
-        is_inside_grid = pos[0] < env.width-4
-        return not (is_empty and is_inside_grid)
+        is_inside_grid = pos[0] < env.width-n_blocks
+        if not is_inside_grid:
+            return True
+
+        positions = [(pos[0]+i, pos[1]) for i in range(n_blocks)]
+        is_empty = all([env.grid.get(*p) is None for p in positions])
+        return not is_empty
 
     # sample the pos of the leftmost rule block
     pos = env.place_obj(None, reject_fn=_is_invalid_rule_pos)
-    put_rule(env, obj, property, [pos, (pos[0]+1, pos[1]), (pos[0]+2, pos[1])])
-
+    positions = [(pos[0]+i, pos[1]) for i in range(n_blocks)]
+    
+    put_rule(env, obj, property, positions, color=color)
+    return positions

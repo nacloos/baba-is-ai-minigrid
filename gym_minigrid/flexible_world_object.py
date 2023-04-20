@@ -27,6 +27,7 @@ objects = [
     "fkey",
     'baba'
 ]
+properties.extend(objects)  # an object can also be a property (e.g. ball is key)
 
 name_mapping = {
     'fwall': 'wall',
@@ -67,7 +68,7 @@ def add_color_types(color_types):
 
 add_color_types(name_mapping.values())
 add_object_types(objects)
-add_object_types(['rule', 'rule_object', 'rule_is', 'rule_property'])
+add_object_types(['rule', 'rule_object', 'rule_is', 'rule_property', 'rule_color'])
 
 
 def make_obj(name: str, color: str = None):
@@ -146,7 +147,19 @@ class RuleIs(RuleBlock):
         super().__init__('is', 'rule_is', 'purple', is_push=is_push)
 
 
+class RuleColor(RuleBlock):
+    def __init__(self, obj_color, is_push=True):
+        assert obj_color in COLOR_TO_IDX, "{} not in {}".format(obj_color, COLOR_TO_IDX)
+
+        super().__init__(obj_color, 'rule_color', 'purple', is_push=is_push)
+        self.obj_color = obj_color
+
+
 class Ruleset:
+    """
+    Each object has a reference to the ruleset object, which is automatically updated (would have to manually update it
+    if were using a dict instead).
+    """
     def __init__(self, ruleset_dict):
         self.ruleset_dict = ruleset_dict
 
@@ -159,8 +172,12 @@ class Ruleset:
     def __setitem__(self, key, value):
         self.ruleset_dict[key] = value
 
-    def __getattr__(self, item):
-        return getattr(self.ruleset_dict, item)
+    # TODO: cause infinite loop when using vec env
+    # def __getattr__(self, item):
+    #     return getattr(self.ruleset_dict, item)
+
+    def get(self, *args, **kwargs):
+        return self.ruleset_dict.get(*args, **kwargs)
 
 
 

@@ -2,9 +2,9 @@ import math
 
 import numpy as np
 
-from utils import add_img_text
-from minigrid import WorldObj, COLORS, OBJECT_TO_IDX, COLOR_TO_IDX
-from rendering import fill_coords, point_in_circle, point_in_rect, point_in_triangle, rotate_fn
+from gym_minigrid.utils import add_img_text
+from gym_minigrid.minigrid import WorldObj, COLORS, OBJECT_TO_IDX, COLOR_TO_IDX
+from gym_minigrid.rendering import fill_coords, point_in_circle, point_in_rect, point_in_triangle, rotate_fn
 
 
 properties = [
@@ -27,6 +27,7 @@ objects = [
     "fkey",
     'baba'
 ]
+properties.extend(objects)  # an object can also be a property (e.g. ball is key)
 
 name_mapping = {
     'fwall': 'wall',
@@ -77,38 +78,29 @@ add_object_types(objects)
 add_object_types(['rule', 'rule_object', 'rule_is', 'rule_property', 'rule_color'])
 
 
-def make_obj(name: str, obj_color=None):
+# def make_obj(name: str, obj_color=None): # created conflict
+# def make_obj(name: str, color: str = None):
+def make_obj(name: str, color: str = None):  # CREATED MERGE CONFLICT, concerned about color param, took dev implementation
     """
     Make an object from a string name
     """
+    kwargs = {'color': color} if color is not None else {}
+
     # TODO: make it more general
     if name == "fwall" or name == "wall":
-        if obj_color is not None:
-            return FWall(color=obj_color)
-        else:
-            return FWall()
+        obj_cls = FWall
     elif name == "fball" or name == "ball":
-        if obj_color is not None:
-            return FBall(color=obj_color)
-        else:
-            return FBall()
+        obj_cls = FBall
     elif name == "fkey" or name == "key":
-        if obj_color is not None:
-            return FKey(color=obj_color)
-        else:
-            return FKey()
+        obj_cls = FKey
     elif name == "fdoor" or name == "door":
-        if obj_color is not None:
-            return FDoor(color=obj_color)
-        else:
-            return FDoor()
+        obj_cls = FDoor
     elif name == "baba":
-        if obj_color is not None:
-            return Baba(color=obj_color)
-        else:
-            return Baba()
+        obj_cls = Baba
     else:
         raise ValueError(name)
+
+    return obj_cls(**kwargs)
 
 
 class RuleBlock(WorldObj):
@@ -173,6 +165,10 @@ class RuleColor(RuleBlock):
 
 
 class Ruleset:
+    """
+    Each object has a reference to the ruleset object, which is automatically updated (would have to manually update it
+    if were using a dict instead).
+    """
     def __init__(self, ruleset_dict):
         self.ruleset_dict = ruleset_dict
 
@@ -185,11 +181,16 @@ class Ruleset:
     def __setitem__(self, key, value):
         self.ruleset_dict[key] = value
 
-    def __getattr__(self, item):
-        return getattr(self.ruleset_dict, item)
-    
     def __str__(self):
         return f'Ruleset dict: {self.ruleset_dict}'
+        
+    # TODO: cause infinite loop when using vec env
+    # def __getattr__(self, item):
+    #     return getattr(self.ruleset_dict, item)
+
+    def get(self, *args, **kwargs):
+        return self.ruleset_dict.get(*args, **kwargs)
+
 
 
 

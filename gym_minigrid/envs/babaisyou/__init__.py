@@ -1,18 +1,18 @@
-from envs.babaisyou.goto import (
+from gym_minigrid.envs.babaisyou.goto import (
     GoToObjEnv,
     GoToWinObjEnv
 )
-from envs.babaisyou.move import (
+from gym_minigrid.envs.babaisyou.move import (
     MoveObjEnv,
     OpenShutObjEnv,
     OpenAndGoToWinEnv,
     FourRoomEnv
 )
-from envs.babaisyou.changerule import (
+from gym_minigrid.envs.babaisyou.changerule import (
     ChangeRuleEnv,
     TestRuleEnv,
     MoveBlockEnv,
     MakeRuleEnv
 )
-from envs.babaisyou.test import TestEnv
-from envs.babaisyou.rule_generalization import Experiment2, Experiment3, AdjExperiment1
+from gym_minigrid.envs.babaisyou.test import TestEnv
+from gym_minigrid.envs.babaisyou.rule_generalization import Experiment2, Experiment3, AdjExperiment1

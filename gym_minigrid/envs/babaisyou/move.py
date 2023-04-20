@@ -1,10 +1,10 @@
 import numpy as np
 
-from minigrid import Wall
-from babaisyou import BabaIsYouEnv, BabaIsYouGrid
-from flexible_world_object import RuleObject, RuleIs, RuleProperty, Baba, make_obj, \
+from gym_minigrid.minigrid import Wall
+from gym_minigrid.babaisyou import BabaIsYouEnv, BabaIsYouGrid
+from gym_minigrid.flexible_world_object import RuleObject, RuleIs, RuleProperty, Baba, make_obj, \
     FDoor, FWall, FBall, FKey
-from babaisyou import put_rule
+from gym_minigrid.babaisyou import put_rule
 
 
 class MoveObjEnv(BabaIsYouEnv):

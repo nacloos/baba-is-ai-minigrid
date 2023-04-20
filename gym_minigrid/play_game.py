@@ -1,7 +1,7 @@
 import gymnasium as gym
 import pygame
-from babaisyou import BabaIsYouEnv #, BabaIsYouGrid
-from minigrid import MiniGridEnv #, Grid, MissionSpace,
+from gym_minigrid.babaisyou import BabaIsYouEnv #, BabaIsYouGrid
+from gym_minigrid.minigrid import MiniGridEnv #, Grid, MissionSpace,
 
 # import register_minigrid_envs
 from gym.envs.registration import register

@@ -11,6 +11,7 @@ from gym import spaces
 from gym.utils import seeding
 
 # Size in pixels of a tile in the full-scale human view
+from gym_minigrid import flexible_world_object
 from gym_minigrid.flexible_world_object import make_obj, RuleColor, RuleObject, RuleIs, RuleProperty, Ruleset, RuleBlock
 from gym_minigrid.minigrid import Grid, TILE_PIXELS, DIR_TO_VEC, WorldObj, Wall, OBJECT_TO_IDX
 from gym_minigrid.rendering import (
@@ -859,7 +860,12 @@ def put_rule(env, obj: str, property: str, positions, color: str = None, is_push
 
     env.put_obj(RuleObject(obj, is_push=is_push), *positions[0])
     env.put_obj(RuleIs(is_push=is_push), *positions[1])
-    env.put_obj(RuleProperty(property, is_push=is_push), *positions[2])
+
+    if flexible_world_object.name_mapping_inverted[property] in flexible_world_object.objects:
+        # handle 'obj1 is obj2'
+        env.put_obj(RuleObject(property, is_push=is_push), *positions[2])
+    else:
+        env.put_obj(RuleProperty(property, is_push=is_push), *positions[2])
 
 
 def place_rule(env, obj: str, property: str, color: str = None):

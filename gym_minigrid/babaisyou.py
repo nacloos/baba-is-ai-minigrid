@@ -868,7 +868,7 @@ def put_rule(env, obj: str, property: str, positions, color: str = None, is_push
         env.put_obj(RuleProperty(property, is_push=is_push), *positions[2])
 
 
-def place_rule(env, obj: str, property: str, color: str = None):
+def place_rule(env, obj: str, property: str, color: str = None, is_push: bool = True):
     # TODO: vertical rules
     n_blocks = 3 if color is None else 4
 
@@ -887,5 +887,5 @@ def place_rule(env, obj: str, property: str, color: str = None):
     pos = env.place_obj(None, reject_fn=_is_invalid_rule_pos)
     positions = [(pos[0]+i, pos[1]) for i in range(n_blocks)]
     
-    put_rule(env, obj, property, positions, color=color)
+    put_rule(env, obj, property, positions, color=color, is_push=is_push)
     return positions

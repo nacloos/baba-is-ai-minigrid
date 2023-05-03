@@ -133,10 +133,11 @@ class GoToObjEnv(BaseGridEnv):
 
 
 class GoToWinObjEnv(BaseGridEnv):
-    def __init__(self, size=6, rdm_pos=False, n_walls=1, n_balls=1, rules=None, show_rules=True, **kwargs):
+    def __init__(self, size=6, rdm_pos=False, rdm_obj=False, n_walls=1, n_balls=1, rules=None, show_rules=True, **kwargs):
         self.rdm_pos = rdm_pos
         self.n_balls = n_balls
         self.n_walls = n_walls
+        self.rdm_obj = rdm_obj
         if rules is None:
             self.rules = [
                 {'fball': 'is_defeat', 'fwall': 'is_goal'},
@@ -160,10 +161,10 @@ class GoToWinObjEnv(BaseGridEnv):
         super().__init__(size=size, default_ruleset=ruleset,  **kwargs)
 
     def encode_rules(self, mode='matrix'):
-        ruleset = self.get_ruleset()
+        ruleset = self.get_ruleset().ruleset_dict
         objects = {'fball': 0, 'fwall': 1, 'baba': 2}
         properties = {'is_goal': 0, 'is_defeat': 1, 'is_agent': 2}
-
+        # print(ruleset)
         rule_encoding = np.zeros((len(objects), len(properties)))
         rules = []
         for property in ruleset.keys():
@@ -189,7 +190,7 @@ class GoToWinObjEnv(BaseGridEnv):
         self.rule2_pos = [(1, 2), (2, 2), (3, 2)]
 
         # randomly sample the rules
-        rule_idx = np.random.choice(len(self.rules))
+        self.rule_idx = rule_idx = np.random.choice(len(self.rules))
         ball_property = self.rules[rule_idx]['fball']
         wall_property = self.rules[rule_idx]['fwall']
 
@@ -205,8 +206,13 @@ class GoToWinObjEnv(BaseGridEnv):
         n_balls = np.random.choice(self.n_balls) if isinstance(self.n_balls, list) else self.n_balls
 
         if not self.rdm_pos:
-            wall_pos = (1, 4)
-            ball_pos = (3, 4)
+            positions = [(1, 4), (3, 4)]
+            if not self.rdm_obj:
+                wall_pos_idx, ball_pos_idx = 0, 1
+            else:
+                wall_pos_idx, ball_pos_idx = np.random.choice(2, replace=False, size=2)
+            wall_pos = positions[wall_pos_idx]
+            ball_pos = positions[ball_pos_idx]
             baba_pos = (2, 4)
             self.put_obj(FWall(), *wall_pos)
             self.put_obj(FBall(), *ball_pos)
@@ -221,3 +227,17 @@ class GoToWinObjEnv(BaseGridEnv):
         # self.agent_pos = (2, 4)
         # self.agent_dir = 0
         self.place_agent()
+
+    # def reset(self, *args, **kwargs):
+    #     res = super().reset(*args, **kwargs)
+    #
+    #     # update ruleset
+    #     # reset
+    #     # TODO: clean
+    #     self._ruleset["is_defeat"] = {'fball': False, 'fwall': False}
+    #     self._ruleset["is_goal"] = {'fball': False, 'fwall': False}
+    #
+    #     for k, v in self.rules[self.rule_idx].items():
+    #         self._ruleset[v][k] = True
+    #
+    #     return res

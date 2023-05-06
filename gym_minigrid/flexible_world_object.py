@@ -129,7 +129,8 @@ class RuleBlock(WorldObj):
 class RuleObject(RuleBlock):
     def __init__(self, obj, is_push=True):
         obj = name_mapping_inverted[obj] if obj not in objects else obj
-        assert obj in objects, "{} not in {}".format(obj, objects)
+        # TODO: red push is win (push is a rule_obj but not in objects)
+        # assert obj in objects, "{} not in {}".format(obj, objects)
 
         super().__init__(obj, 'rule_object', 'purple', is_push=is_push)
         self.object = obj

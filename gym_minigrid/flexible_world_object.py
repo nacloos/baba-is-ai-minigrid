@@ -160,8 +160,8 @@ class RuleColor(RuleBlock):
 
 class Ruleset:
     """
-    Each object has a reference to the ruleset object, which is automatically updated (would have to manually update it
-    if were using a dict instead).
+    Each object in the env has a reference to the ruleset object, which is automatically updated (would have to manually
+    update it if were using a dict instead).
     """
     def __init__(self, ruleset_dict):
         self.ruleset_dict = ruleset_dict
@@ -175,6 +175,9 @@ class Ruleset:
     def __setitem__(self, key, value):
         self.ruleset_dict[key] = value
 
+    def __str__(self):
+        return f'Ruleset dict: {self.ruleset_dict}'
+
     # TODO: cause infinite loop when using vec env
     # def __getattr__(self, item):
     #     return getattr(self.ruleset_dict, item)
@@ -184,19 +187,31 @@ class Ruleset:
 
 
 
-def make_prop_fn(prop, typ):
+def make_prop_fn(prop: str):
     """
-    Make a method that retrieves the property of a FlexibleWorldObj in the ruleset
+    Make a method that retrieves the property of an instance of FlexibleWorldObj in the ruleset
     """
-    def get_prop(self):
+    def get_prop(self: FlexibleWorldObj):
+        # retrieve the type and color specific to the instance 'self' (the function is the same for all instances)
+        typ = self.type
+        color = self.color
         ruleset = self.get_ruleset()
 
-        # TODO: is_pull, is_agent implies is_stop
+        # TODO: cleaner way to implement implicit rules? e.g. is_pull, is_agent implies is_stop
         if prop == 'is_stop':
             if ruleset['is_pull'].get(typ, False) or ruleset['is_agent'].get(typ, False):
                 ruleset['is_stop'][typ] = True
 
-        return ruleset[prop].get(typ, False)
+        # check for rules specific to a color e.g. {"is_goal": {"fball": True, "fball_color": [0]}}
+        color_key = typ + "_color"
+        color_set = ruleset[prop].get(color_key, [])
+
+        if ruleset[prop].get(typ, False):  # object type set to True
+            # if no specified color or object fits color specifications
+            if (len(color_set) == 0) or (color in color_set):
+                return True
+        return False
+
     return get_prop
 
 
@@ -208,14 +223,8 @@ class FlexibleWorldObj(WorldObj):
         self.dir = 0  # order: right, down, left, up
 
         for prop in properties:
-            setattr(self.__class__, prop, make_prop_fn(prop, self.type))
-
-    # TODO: might be better to use a Ruleset object
-    # def set_ruleset_getter(self, get_ruleset):
-    #     self._get_ruleset = get_ruleset
-    #
-    # def get_ruleset(self):
-    #     return self._get_ruleset()
+            # create a method for each property and bind it to the class (same for all the instances of that class)
+            setattr(self.__class__, prop, make_prop_fn(prop))
 
     def set_ruleset(self, ruleset):
         self._ruleset = ruleset

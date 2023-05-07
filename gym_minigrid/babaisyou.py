@@ -434,13 +434,15 @@ class BabaIsYouEnv(gym.Env):
                 if hasattr(e, "set_ruleset"):
                     e.set_ruleset(self._ruleset)
 
+        self.agent_pos = self.set_agent()
+
         # These fields should be defined by _gen_grid
         assert self.agent_pos is not None
         assert self.agent_dir is not None
 
         # Check that the agent doesn't overlap with an object
         start_cell = self.grid.get(*self.agent_pos)
-        assert start_cell is None or start_cell.can_overlap()
+        # assert start_cell is None or start_cell.can_overlap()
 
         # Item picked up, being carried, initially nothing
         self.carrying = None
@@ -579,13 +581,24 @@ class BabaIsYouEnv(gym.Env):
         obj.init_pos = (i, j)
         obj.cur_pos = (i, j)
 
+
+    def set_agent(self, top=None, size=None, rand_dir=True, max_tries=math.inf):
+        """
+        Set the agent's starting point at an empty position in the grid
+        """
+        for k, e in enumerate(self.grid):
+            if e is not None and e.is_agent():
+                pos = (k % self.grid.width, k // self.grid.width)
+                self.agent_pos = pos
+                break
+        self.agent_dir = rand_int(0, 4)
+        return pos
+
     def place_agent(self, top=None, size=None, rand_dir=True, max_tries=math.inf):
         """
         Set the agent's starting point at an empty position in the grid
         """
-
         self.agent_pos = None
-        # pos = self.place_obj(None, top, size, max_tries=max_tries)
         pos = self.place_obj(None, top, size, max_tries=max_tries)
         self.agent_pos = pos
 
@@ -868,7 +881,16 @@ def put_rule(env, obj: str, property: str, positions, color: str = None, is_push
         env.put_obj(RuleProperty(property, is_push=is_push), *positions[2])
 
 
-def place_rule(env, obj: str, property: str, color: str = None, is_push: bool = True):
+def place_rule(env, obj: str, property: str, color: str = None, is_push: bool = True, pos=None):
+    """
+    Args:
+        env:
+        obj:
+        property:
+        color:
+        is_push:
+        pos: position of the leftmost block
+    """
     # TODO: vertical rules
     n_blocks = 3 if color is None else 4
 
@@ -883,8 +905,9 @@ def place_rule(env, obj: str, property: str, color: str = None, is_push: bool = 
         is_empty = all([env.grid.get(*p) is None for p in positions])
         return not is_empty
 
-    # sample the pos of the leftmost rule block
-    pos = env.place_obj(None, reject_fn=_is_invalid_rule_pos)
+    if pos is None:
+        # sample the pos of the leftmost rule block
+        pos = env.place_obj(None, reject_fn=_is_invalid_rule_pos)
     positions = [(pos[0]+i, pos[1]) for i in range(n_blocks)]
     
     put_rule(env, obj, property, positions, color=color, is_push=is_push)

@@ -586,11 +586,16 @@ class BabaIsYouEnv(gym.Env):
         """
         Set the agent's starting point at an empty position in the grid
         """
+        # TODO: clean
+        pos = None
         for k, e in enumerate(self.grid):
             if e is not None and e.is_agent():
                 pos = (k % self.grid.width, k // self.grid.width)
                 self.agent_pos = pos
                 break
+        if pos is None:
+            # no agent in the env
+            pos = self.place_agent()
         self.agent_dir = rand_int(0, 4)
         return pos
 

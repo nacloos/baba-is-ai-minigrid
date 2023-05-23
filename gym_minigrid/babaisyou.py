@@ -592,11 +592,12 @@ class BabaIsYouEnv(gym.Env):
             if e is not None and e.is_agent():
                 pos = (k % self.grid.width, k // self.grid.width)
                 self.agent_pos = pos
+                self.agent_dir = e.dir
                 break
+
         if pos is None:
             # no agent in the env
-            pos = self.place_agent()
-        self.agent_dir = rand_int(0, 4)
+            pos = self.place_agent(top, size, rand_dir, max_tries)
         return pos
 
     def place_agent(self, top=None, size=None, rand_dir=True, max_tries=math.inf):
@@ -879,7 +880,7 @@ def put_rule(env, obj: str, property: str, positions, color: str = None, is_push
     env.put_obj(RuleObject(obj, is_push=is_push), *positions[0])
     env.put_obj(RuleIs(is_push=is_push), *positions[1])
 
-    if flexible_world_object.name_mapping_inverted[property] in flexible_world_object.objects:
+    if flexible_world_object.name_mapping_inverted.get(property, property) in flexible_world_object.objects:
         # handle 'obj1 is obj2'
         env.put_obj(RuleObject(property, is_push=is_push), *positions[2])
     else:

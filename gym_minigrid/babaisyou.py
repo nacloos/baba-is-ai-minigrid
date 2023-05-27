@@ -409,8 +409,8 @@ class BabaIsYouEnv(gym.Env):
         try:
             super().reset(seed=seed)
         except TypeError:
-            # gym 0.21 compatibility
-            super().reset()
+            # gym==0.21 reset not implemented in gym.Env
+            pass
 
         # Current position and direction of the agent
         self.agent_pos = None

@@ -406,7 +406,12 @@ class BabaIsYouEnv(gym.Env):
         return self._ruleset
 
     def reset(self, *, seed=None, return_info=False, options=None):
-        super().reset(seed=seed)
+        try:
+            super().reset(seed=seed)
+        except TypeError:
+            # gym 0.21 compatibility
+            super().reset()
+
         # Current position and direction of the agent
         self.agent_pos = None
         self.agent_dir = None

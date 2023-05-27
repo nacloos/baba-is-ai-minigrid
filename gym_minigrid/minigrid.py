@@ -103,7 +103,8 @@ class MissionSpace(spaces.Space):
         self,
         mission_func: Callable[..., str],
         ordered_placeholders: Optional["list[list[str]]"] = None,
-        seed: Optional[Union[int, seeding.RandomNumberGenerator]] = None,
+        # seed: Optional[Union[int, seeding.RandomNumberGenerator]] = None,  # raises an error for gym==0.21
+        seed = None,
     ):
         r"""Constructor of :class:`MissionSpace` space.
 

@@ -1,8 +1,8 @@
-from gym_minigrid.babaisyou import BabaIsYouGrid
-from gym_minigrid.envs.babaisyou.core.flexible_world_object import FBall, Baba, FWall, FDoor, FKey
-from gym_minigrid.envs.babaisyou.goto import BaseGridEnv
-from gym_minigrid.envs.babaisyou.wrappers import OpenShutReward
-from gym_minigrid.play_game import play_babaisyou
+from baba_minigrid.babaisyou import BabaIsYouGrid
+from baba_minigrid.envs.babaisyou.core.flexible_world_object import FBall, Baba, FWall, FDoor, FKey
+from baba_minigrid.envs.babaisyou.goto import BaseGridEnv
+from baba_minigrid.envs.babaisyou.wrappers import OpenShutReward
+from baba_minigrid.play_game import play_babaisyou
 
 
 class TestWinLoseEnv(BaseGridEnv):

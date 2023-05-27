@@ -1,9 +1,9 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-from gym_minigrid.babaisyou import BabaIsYouGrid
-from gym_minigrid.envs.babaisyou.core.flexible_world_object import FBall, Baba
-from gym_minigrid.envs.babaisyou.goto import BaseGridEnv
+from baba_minigrid.babaisyou import BabaIsYouGrid
+from baba_minigrid.envs.babaisyou.core.flexible_world_object import FBall, Baba
+from baba_minigrid.envs.babaisyou.goto import BaseGridEnv
 
 
 class TestEnv(BaseGridEnv):
